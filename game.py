@@ -14,6 +14,7 @@ pygame.display.set_caption("Zombie Shooter")
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
+BLACK = (0, 0, 0)
 
 # Player settings
 player_size = 40
@@ -22,16 +23,18 @@ player_speed = 3
 
 # Bullets
 bullets = []
-bullet_speed = 5
-bullet_cooldown = 300  # milliseconds
+bullet_speed = 7.5
+bullet_cooldown = 650  # milliseconds
 last_shot_time = 0
 
 # Zombies
 zombies = []
 zombie_size = 40
-zombie_speed = 1
-spawn_rate = 1000  # milliseconds
+zombie_speed = 3
+spawn_rate = 400  # milliseconds
 last_spawn_time = 0
+
+game_over = False
 
 def spawn_zombie():
     side = random.choice(["left", "right", "top", "bottom"])
@@ -61,21 +64,29 @@ def move_bullets():
     bullets = [b for b in bullets if 0 <= b[0] <= WIDTH and 0 <= b[1] <= HEIGHT]
 
 def check_collisions():
-    global zombies, bullets
+    global zombies, bullets, game_over
     for bullet in bullets[:]:
         for zombie in zombies[:]:
             if abs(bullet[0] - zombie[0]) < zombie_size // 2 and abs(bullet[1] - zombie[1]) < zombie_size // 2:
                 zombies.remove(zombie)
                 bullets.remove(bullet)
                 break
+    for zombie in zombies:
+        if abs(zombie[0] - player_x) < player_size and abs(zombie[1] - player_y) < player_size:
+            game_over = True
 
 def draw():
     screen.fill(WHITE)
-    pygame.draw.rect(screen, GREEN, (player_x, player_y, player_size, player_size))
-    for bullet in bullets:
-        pygame.draw.circle(screen, RED, (int(bullet[0]), int(bullet[1])), 5)
-    for zombie in zombies:
-        pygame.draw.rect(screen, RED, (zombie[0], zombie[1], zombie_size, zombie_size))
+    if game_over:
+        font = pygame.font.Font(None, 50)
+        text = font.render("You Died! Press R to Restart", True, RED)
+        screen.blit(text, (WIDTH // 2 - 200, HEIGHT // 2 - 50))
+    else:
+        pygame.draw.rect(screen, GREEN, (player_x, player_y, player_size, player_size))
+        for bullet in bullets:
+            pygame.draw.circle(screen, RED, (int(bullet[0]), int(bullet[1])), 5)
+        for zombie in zombies:
+            pygame.draw.rect(screen, RED, (zombie[0], zombie[1], zombie_size, zombie_size))
     pygame.display.flip()
 
 # Game loop
@@ -87,35 +98,41 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+            player_x, player_y = WIDTH // 2, HEIGHT // 2
+            zombies.clear()
+            bullets.clear()
+            game_over = False
     
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_w] and player_y > 0:
-        player_y -= player_speed
-    if keys[pygame.K_s] and player_y < HEIGHT - player_size:
-        player_y += player_speed
-    if keys[pygame.K_a] and player_x > 0:
-        player_x -= player_speed
-    if keys[pygame.K_d] and player_x < WIDTH - player_size:
-        player_x += player_speed
+    if not game_over:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w] and player_y > 0:
+            player_y -= player_speed
+        if keys[pygame.K_s] and player_y < HEIGHT - player_size:
+            player_y += player_speed
+        if keys[pygame.K_a] and player_x > 0:
+            player_x -= player_speed
+        if keys[pygame.K_d] and player_x < WIDTH - player_size:
+            player_x += player_speed
 
-    # Auto-shooting at the nearest zombie
-    now = pygame.time.get_ticks()
-    if now - last_shot_time > bullet_cooldown and zombies:
-        nearest_zombie = min(zombies, key=lambda z: math.hypot(z[0] - player_x, z[1] - player_y))
-        dx, dy = nearest_zombie[0] - player_x, nearest_zombie[1] - player_y
-        dist = math.hypot(dx, dy)
-        if dist != 0:
-            bullets.append([player_x, player_y, dx / dist, dy / dist])
-            last_shot_time = now
+        # Auto-shooting at the nearest zombie
+        now = pygame.time.get_ticks()
+        if now - last_shot_time > bullet_cooldown and zombies:
+            nearest_zombie = min(zombies, key=lambda z: math.hypot(z[0] - player_x, z[1] - player_y))
+            dx, dy = nearest_zombie[0] - player_x, nearest_zombie[1] - player_y
+            dist = math.hypot(dx, dy)
+            if dist != 0:
+                bullets.append([player_x, player_y, dx / dist, dy / dist])
+                last_shot_time = now
 
-    move_bullets()
-    move_zombies()
-    check_collisions()
-    
-    now = pygame.time.get_ticks()
-    if now - last_spawn_time > spawn_rate:
-        spawn_zombie()
-        last_spawn_time = now
+        move_bullets()
+        move_zombies()
+        check_collisions()
+        
+        now = pygame.time.get_ticks()
+        if now - last_spawn_time > spawn_rate:
+            spawn_zombie()
+            last_spawn_time = now
 
     draw()
     clock.tick(60)
