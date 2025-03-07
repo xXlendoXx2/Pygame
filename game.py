@@ -37,6 +37,7 @@ last_spawn_time = 0
 # Timer
 start_time = pygame.time.get_ticks()
 high_score = 0
+last_score = 0
 
 game_over = False
 
@@ -68,7 +69,7 @@ def move_bullets():
     bullets = [b for b in bullets if 0 <= b[0] <= WIDTH and 0 <= b[1] <= HEIGHT]
 
 def check_collisions():
-    global zombies, bullets, game_over, high_score
+    global zombies, bullets, game_over, high_score, last_score
     for bullet in bullets[:]:
         for zombie in zombies[:]:
             if abs(bullet[0] - zombie[0]) < zombie_size // 2 and abs(bullet[1] - zombie[1]) < zombie_size // 2:
@@ -78,7 +79,8 @@ def check_collisions():
     for zombie in zombies:
         if abs(zombie[0] - player_x) < player_size and abs(zombie[1] - player_y) < player_size:
             game_over = True
-            high_score = max(high_score, (pygame.time.get_ticks() - start_time) // 1000)
+            last_score = (pygame.time.get_ticks() - start_time) // 1000
+            high_score = max(high_score, last_score)
 
 def draw():
     screen.fill(WHITE)
@@ -86,8 +88,10 @@ def draw():
         font = pygame.font.Font(None, 50)
         text = font.render("You Died! Press R to Restart", True, RED)
         screen.blit(text, (WIDTH // 2 - 200, HEIGHT // 2 - 50))
-        score_text = font.render(f"High Score: {high_score}s", True, BLACK)
-        screen.blit(score_text, (WIDTH // 2 - 100, HEIGHT // 2))
+        high_score_text = font.render(f"High Score: {high_score}s", True, BLACK)
+        screen.blit(high_score_text, (WIDTH // 2 - 100, HEIGHT // 2))
+        last_score_text = font.render(f"Your Score: {last_score}s", True, BLACK)
+        screen.blit(last_score_text, (WIDTH // 2 - 100, HEIGHT // 2 + 40))
     else:
         pygame.draw.rect(screen, GREEN, (player_x, player_y, player_size, player_size))
         for bullet in bullets:
