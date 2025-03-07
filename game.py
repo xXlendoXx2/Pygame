@@ -24,15 +24,19 @@ player_speed = 3
 # Bullets
 bullets = []
 bullet_speed = 7.5
-bullet_cooldown = 650  # milliseconds
+bullet_cooldown = 625  # milliseconds
 last_shot_time = 0
 
 # Zombies
 zombies = []
 zombie_size = 40
-zombie_speed = 3
+zombie_speed = 2.5
 spawn_rate = 400  # milliseconds
 last_spawn_time = 0
+
+# Timer
+start_time = pygame.time.get_ticks()
+high_score = 0
 
 game_over = False
 
@@ -64,7 +68,7 @@ def move_bullets():
     bullets = [b for b in bullets if 0 <= b[0] <= WIDTH and 0 <= b[1] <= HEIGHT]
 
 def check_collisions():
-    global zombies, bullets, game_over
+    global zombies, bullets, game_over, high_score
     for bullet in bullets[:]:
         for zombie in zombies[:]:
             if abs(bullet[0] - zombie[0]) < zombie_size // 2 and abs(bullet[1] - zombie[1]) < zombie_size // 2:
@@ -74,6 +78,7 @@ def check_collisions():
     for zombie in zombies:
         if abs(zombie[0] - player_x) < player_size and abs(zombie[1] - player_y) < player_size:
             game_over = True
+            high_score = max(high_score, (pygame.time.get_ticks() - start_time) // 1000)
 
 def draw():
     screen.fill(WHITE)
@@ -81,12 +86,20 @@ def draw():
         font = pygame.font.Font(None, 50)
         text = font.render("You Died! Press R to Restart", True, RED)
         screen.blit(text, (WIDTH // 2 - 200, HEIGHT // 2 - 50))
+        score_text = font.render(f"High Score: {high_score}s", True, BLACK)
+        screen.blit(score_text, (WIDTH // 2 - 100, HEIGHT // 2))
     else:
         pygame.draw.rect(screen, GREEN, (player_x, player_y, player_size, player_size))
         for bullet in bullets:
             pygame.draw.circle(screen, RED, (int(bullet[0]), int(bullet[1])), 5)
         for zombie in zombies:
             pygame.draw.rect(screen, RED, (zombie[0], zombie[1], zombie_size, zombie_size))
+        
+        # Display timer
+        font = pygame.font.Font(None, 36)
+        elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
+        timer_text = font.render(f"Time: {elapsed_time}s", True, BLACK)
+        screen.blit(timer_text, (WIDTH - 150, 10))
     pygame.display.flip()
 
 # Game loop
@@ -103,6 +116,7 @@ while running:
             zombies.clear()
             bullets.clear()
             game_over = False
+            start_time = pygame.time.get_ticks()
     
     if not game_over:
         keys = pygame.key.get_pressed()
