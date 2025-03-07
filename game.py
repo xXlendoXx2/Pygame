@@ -17,6 +17,25 @@ GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 
+# High score file path
+high_score_file = "high_score.txt"
+
+# Function to load the high score
+def load_high_score():
+    try:
+        with open(high_score_file, "r") as file:
+            return int(file.read())
+    except (FileNotFoundError, ValueError):
+        return 0  # Return 0 if the file doesn't exist or the content is invalid
+
+# Function to save the high score
+def save_high_score(score):
+    with open(high_score_file, "w") as file:
+        file.write(str(score))
+
+# Load the high score when the game starts
+high_score = load_high_score()
+
 # Player settings
 player_size = 30
 player_x, player_y = WIDTH // 2, HEIGHT // 2
@@ -43,7 +62,6 @@ last_spawn_time = 0
 
 # Timer
 start_time = pygame.time.get_ticks()
-high_score = 0
 last_score = 0
 
 game_over = False
@@ -88,6 +106,7 @@ def check_collisions():
             game_over = True
             last_score = (pygame.time.get_ticks() - start_time) // 1000
             high_score = max(high_score, last_score)
+            save_high_score(high_score)  # Save high score whenever the game ends
 
 def draw():
     screen.fill(WHITE)
@@ -137,6 +156,7 @@ while running:
             game_over = False
             start_time = pygame.time.get_ticks()
             stamina = max_stamina  # Reset stamina on restart
+            last_score = 0  # Reset the last score
 
     if not game_over:
         keys = pygame.key.get_pressed()
