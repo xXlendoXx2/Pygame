@@ -15,11 +15,18 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
+BLUE = (0, 0, 255)
 
 # Player settings
 player_size = 40
 player_x, player_y = WIDTH // 2, HEIGHT // 2
-player_speed = 3
+player_speed = 4
+sprint_speed = 7
+stamina = 300
+max_stamina = 300
+stamina_recovery = 0.5
+stamina_depletion = 1.5
+is_sprinting = False
 
 # Bullets
 bullets = []
@@ -104,6 +111,14 @@ def draw():
         elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
         timer_text = font.render(f"Time: {elapsed_time}s", True, BLACK)
         screen.blit(timer_text, (WIDTH - 150, 10))
+
+        # Draw stamina bar
+        stamina_bar_width = 100
+        stamina_bar_height = 10
+        stamina_percentage = stamina / max_stamina
+        pygame.draw.rect(screen, BLACK, (player_x - 10, player_y - 15, stamina_bar_width, stamina_bar_height))
+        pygame.draw.rect(screen, BLUE, (player_x - 10, player_y - 15, stamina_bar_width * stamina_percentage, stamina_bar_height))
+
     pygame.display.flip()
 
 # Game loop
@@ -121,17 +136,29 @@ while running:
             bullets.clear()
             game_over = False
             start_time = pygame.time.get_ticks()
-    
+            stamina = max_stamina  # Reset stamina on restart
+
     if not game_over:
         keys = pygame.key.get_pressed()
+        
+        # Sprinting logic
+        is_sprinting = keys[pygame.K_LSHIFT] and stamina > 0
+        current_speed = sprint_speed if is_sprinting else player_speed
+
         if keys[pygame.K_w] and player_y > 0:
-            player_y -= player_speed
+            player_y -= current_speed
         if keys[pygame.K_s] and player_y < HEIGHT - player_size:
-            player_y += player_speed
+            player_y += current_speed
         if keys[pygame.K_a] and player_x > 0:
-            player_x -= player_speed
+            player_x -= current_speed
         if keys[pygame.K_d] and player_x < WIDTH - player_size:
-            player_x += player_speed
+            player_x += current_speed
+
+        # Manage stamina
+        if is_sprinting:
+            stamina = max(0, stamina - stamina_depletion)
+        else:
+            stamina = min(max_stamina, stamina + stamina_recovery)
 
         # Auto-shooting at the nearest zombie
         now = pygame.time.get_ticks()
