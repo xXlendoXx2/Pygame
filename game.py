@@ -18,10 +18,10 @@ BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 
 # Player settings
-player_size = 40
+player_size = 30
 player_x, player_y = WIDTH // 2, HEIGHT // 2
-player_speed = 4
-sprint_speed = 7
+player_speed = 5
+sprint_speed = 8
 stamina = 300
 max_stamina = 300
 stamina_recovery = 0.5
@@ -30,7 +30,7 @@ is_sprinting = False
 
 # Bullets
 bullets = []
-bullet_speed = 7.5
+bullet_speed = 9
 bullet_cooldown = 625  # milliseconds
 last_shot_time = 0
 
@@ -113,11 +113,11 @@ def draw():
         screen.blit(timer_text, (WIDTH - 150, 10))
 
         # Draw stamina bar
-        stamina_bar_width = 100
+        stamina_bar_width = 30
         stamina_bar_height = 10
         stamina_percentage = stamina / max_stamina
-        pygame.draw.rect(screen, BLACK, (player_x - 10, player_y - 15, stamina_bar_width, stamina_bar_height))
-        pygame.draw.rect(screen, BLUE, (player_x - 10, player_y - 15, stamina_bar_width * stamina_percentage, stamina_bar_height))
+        pygame.draw.rect(screen, BLACK, (player_x - 0, player_y - 15, stamina_bar_width, stamina_bar_height))
+        pygame.draw.rect(screen, BLUE, (player_x - 0, player_y - 15, stamina_bar_width * stamina_percentage, stamina_bar_height))
 
     pygame.display.flip()
 
