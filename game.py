@@ -56,8 +56,8 @@ last_shot_time = 0
 # Zombies
 zombies = []
 zombie_size = 40
-zombie_speed = 2.5
-spawn_rate = 400  # milliseconds
+zombie_speed = 1.5
+spawn_rate = 325  # milliseconds
 last_spawn_time = 0
 
 # Timer
