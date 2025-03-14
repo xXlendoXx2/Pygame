@@ -26,7 +26,6 @@ player_size = 30
 player_x, player_y = WIDTH // 2, HEIGHT // 2
 player_speed = 6
 sprint_speed = 9
-stamina = 300
 player_health = 3  # Player health
 
 # Bullets
@@ -47,6 +46,10 @@ wave = 1
 zombies_spawned = 0
 zombies_per_wave = 5
 wave_ongoing = True
+
+# Game states
+show_tutorial = True  # New tutorial screen flag
+game_over = False
 
 def spawn_zombie():
     global zombies_spawned
@@ -103,9 +106,9 @@ def draw():
     screen.fill(WHITE)
     pygame.draw.rect(screen, GREEN, (player_x, player_y, player_size, player_size))
     for bullet in bullets:
-        pygame.draw.circle(screen, RED, (int(bullet[0]), int(bullet[1])), 5)
+        pygame.draw.circle(screen, BLUE, (int(bullet[0]), int(bullet[1])), 5)
     for zombie in zombies:
-        pygame.draw.rect(screen, BLUE, (zombie["x"], zombie["y"], zombie_size, zombie_size))
+        pygame.draw.rect(screen, RED, (zombie["x"], zombie["y"], zombie_size, zombie_size))
     
     wave_text = font.render(f"Wave: {wave}", True, BLACK)
     screen.blit(wave_text, (10, 10))
@@ -124,8 +127,29 @@ def game_over_screen():
     screen.blit(restart_text, (WIDTH // 2 - 180, HEIGHT // 1.5))
     pygame.display.flip()
 
+def tutorial_screen():
+    screen.fill(WHITE)
+    title_text = game_over_font.render("Zombie Shooter", True, BLACK)
+    screen.blit(title_text, (WIDTH // 2 - 180, HEIGHT // 6))
+
+    instructions = [
+        "WASD - Move",
+        "SHIFT - Sprint",
+        "Auto-shoots at nearest zombie",
+        "Survive as long as possible!",
+        "Press SPACE to start"
+    ]
+    
+    y_offset = HEIGHT // 3
+    for instruction in instructions:
+        text = font.render(instruction, True, BLACK)
+        screen.blit(text, (WIDTH // 2 - 150, y_offset))
+        y_offset += 40
+
+    pygame.display.flip()
+
 def reset_game():
-    global player_x, player_y, player_health, bullets, zombies, wave, zombies_spawned, zombies_per_wave, wave_ongoing, spawn_rate, last_shot_time
+    global player_x, player_y, player_health, bullets, zombies, wave, zombies_spawned, zombies_per_wave, wave_ongoing, spawn_rate, last_shot_time, show_tutorial, game_over
     player_x, player_y = WIDTH // 2, HEIGHT // 2
     player_health = 3
     bullets = []
@@ -136,24 +160,29 @@ def reset_game():
     wave_ongoing = True
     spawn_rate = 400
     last_shot_time = 0  # Reset shooting cooldown
+    show_tutorial = True  # Show tutorial again
+    game_over = False
 
 running = True
 clock = pygame.time.Clock()
-game_over = False
 
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if game_over:
+        if show_tutorial:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                show_tutorial = False  # Hide tutorial and start game
+        elif game_over:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     reset_game()
-                    game_over = False
                 elif event.key == pygame.K_q:
                     running = False
     
-    if not game_over:
+    if show_tutorial:
+        tutorial_screen()
+    elif not game_over:
         if wave_ongoing:
             keys = pygame.key.get_pressed()
             current_speed = sprint_speed if keys[pygame.K_LSHIFT] else player_speed
@@ -167,7 +196,6 @@ while running:
             if keys[pygame.K_d] and player_x < WIDTH - player_size:
                 player_x += current_speed
 
-            # **Shooting Logic (Restored)**
             now = pygame.time.get_ticks()
             if now - last_shot_time > bullet_cooldown and zombies:
                 nearest_zombie = min(zombies, key=lambda z: math.hypot(z["x"] - player_x, z["y"] - player_y))
@@ -175,7 +203,7 @@ while running:
                 dist = math.hypot(dx, dy)
                 if dist != 0:
                     bullets.append([player_x, player_y, dx / dist, dy / dist])
-                    last_shot_time = now  # Update last shot time
+                    last_shot_time = now
 
             move_bullets()
             move_zombies()
@@ -184,10 +212,8 @@ while running:
                 spawn_zombie()
         else:
             wave += 1
-            zombies_spawned = 0
             zombies_per_wave += 5
             wave_ongoing = True
-            spawn_rate = max(200, spawn_rate - 20)
         draw()
     else:
         game_over_screen()
