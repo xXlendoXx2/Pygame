@@ -65,7 +65,11 @@ start_time = pygame.time.get_ticks()
 last_score = 0
 
 game_over = False
+in_menu = True
+show_tutorial = False
+show_buy_screen = False
 
+# Function to spawn a zombie
 def spawn_zombie():
     side = random.choice(["left", "right", "top", "bottom"])
     if side == "left":
@@ -78,6 +82,7 @@ def spawn_zombie():
         x, y = random.randint(0, WIDTH), HEIGHT
     zombies.append([x, y])
 
+# Function to move zombies
 def move_zombies():
     for zombie in zombies:
         dx, dy = player_x - zombie[0], player_y - zombie[1]
@@ -86,6 +91,7 @@ def move_zombies():
             zombie[0] += (dx / dist) * zombie_speed
             zombie[1] += (dy / dist) * zombie_speed
 
+# Function to move bullets
 def move_bullets():
     global bullets
     for bullet in bullets:
@@ -93,6 +99,7 @@ def move_bullets():
         bullet[1] += bullet[3] * bullet_speed
     bullets = [b for b in bullets if 0 <= b[0] <= WIDTH and 0 <= b[1] <= HEIGHT]
 
+# Function to check collisions
 def check_collisions():
     global zombies, bullets, game_over, high_score, last_score
     for bullet in bullets[:]:
@@ -108,59 +115,119 @@ def check_collisions():
             high_score = max(high_score, last_score)
             save_high_score(high_score)  # Save high score whenever the game ends
 
+# Function to draw everything on the screen
 def draw():
     screen.fill(WHITE)
-    if game_over:
-        font = pygame.font.Font(None, 50)
-        text = font.render("You Died! Press R to Restart", True, RED)
-        screen.blit(text, (WIDTH // 2 - 200, HEIGHT // 2 - 50))
-        high_score_text = font.render(f"High Score: {high_score}s", True, BLACK)
-        screen.blit(high_score_text, (WIDTH // 2 - 100, HEIGHT // 2))
-        last_score_text = font.render(f"Your Score: {last_score}s", True, BLACK)
-        screen.blit(last_score_text, (WIDTH // 2 - 100, HEIGHT // 2 + 40))
+    if in_menu:
+        draw_menu()
+    elif show_tutorial:
+        draw_tutorial()
+    elif game_over:
+        draw_game_over()
     else:
-        pygame.draw.rect(screen, GREEN, (player_x, player_y, player_size, player_size))
-        for bullet in bullets:
-            pygame.draw.circle(screen, RED, (int(bullet[0]), int(bullet[1])), 5)
-        for zombie in zombies:
-            pygame.draw.rect(screen, RED, (zombie[0], zombie[1], zombie_size, zombie_size))
-        
-        # Display timer
-        font = pygame.font.Font(None, 36)
-        elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
-        timer_text = font.render(f"Time: {elapsed_time}s", True, BLACK)
-        screen.blit(timer_text, (WIDTH - 150, 10))
-
-        # Draw stamina bar
-        stamina_bar_width = 30
-        stamina_bar_height = 10
-        stamina_percentage = stamina / max_stamina
-        pygame.draw.rect(screen, BLACK, (player_x - 0, player_y - 15, stamina_bar_width, stamina_bar_height))
-        pygame.draw.rect(screen, BLUE, (player_x - 0, player_y - 15, stamina_bar_width * stamina_percentage, stamina_bar_height))
+        draw_game()
 
     pygame.display.flip()
+
+# Draw the menu screen
+def draw_menu():
+    font = pygame.font.Font(None, 50)
+    title_text = font.render("Zombie Shooter", True, BLACK)
+    start_text = font.render("Press 'Enter' to Start", True, BLACK)
+    tutorial_text = font.render("Press 'T' for Tutorial", True, BLACK)
+    buy_text = font.render("Press 'B' to Buy", True, BLACK)
+
+    screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 4))
+    screen.blit(start_text, (WIDTH // 2 - start_text.get_width() // 2, HEIGHT // 2 - 40))
+    screen.blit(tutorial_text, (WIDTH // 2 - tutorial_text.get_width() // 2, HEIGHT // 2))
+    screen.blit(buy_text, (WIDTH // 2 - buy_text.get_width() // 2, HEIGHT // 2 + 40))
+
+# Draw the tutorial screen
+def draw_tutorial():
+    font = pygame.font.Font(None, 36)
+    tutorial_text = [
+        "Tutorial:",
+        "W - Move Up",
+        "A - Move Left",
+        "S - Move Down",
+        "D - Move Right",
+        "Shift - Sprint",
+        "ESC - Return to Menu"
+    ]
+    y_offset = 100
+    for line in tutorial_text:
+        text = font.render(line, True, BLACK)
+        screen.blit(text, (WIDTH // 2 - text.get_width() // 2, y_offset))
+        y_offset += 40
+
+# Draw the game over screen
+def draw_game_over():
+    font = pygame.font.Font(None, 50)
+    text = font.render("You Died! Press R to Restart", True, RED)
+    screen.blit(text, (WIDTH // 2 - 200, HEIGHT // 2 - 50))
+    high_score_text = font.render(f"High Score: {high_score}s", True, BLACK)
+    screen.blit(high_score_text, (WIDTH // 2 - 100, HEIGHT // 2))
+    last_score_text = font.render(f"Your Score: {last_score}s", True, BLACK)
+    screen.blit(last_score_text, (WIDTH // 2 - 100, HEIGHT // 2 + 40))
+
+# Draw the game screen
+def draw_game():
+    pygame.draw.rect(screen, GREEN, (player_x, player_y, player_size, player_size))
+    for bullet in bullets:
+        pygame.draw.circle(screen, RED, (int(bullet[0]), int(bullet[1])), 5)
+    for zombie in zombies:
+        pygame.draw.rect(screen, RED, (zombie[0], zombie[1], zombie_size, zombie_size))
+
+    # Display timer
+    font = pygame.font.Font(None, 36)
+    elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
+    timer_text = font.render(f"Time: {elapsed_time}s", True, BLACK)
+    screen.blit(timer_text, (WIDTH - 150, 10))
+
+    # Draw stamina bar
+    stamina_bar_width = 30
+    stamina_bar_height = 10
+    stamina_percentage = stamina / max_stamina
+    pygame.draw.rect(screen, BLACK, (player_x - 0, player_y - 15, stamina_bar_width, stamina_bar_height))
+    pygame.draw.rect(screen, BLUE, (player_x - 0, player_y - 15, stamina_bar_width * stamina_percentage, stamina_bar_height))
 
 # Game loop
 running = True
 clock = pygame.time.Clock()
+
 while running:
-    screen.fill(WHITE)
-    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-            player_x, player_y = WIDTH // 2, HEIGHT // 2
-            zombies.clear()
-            bullets.clear()
-            game_over = False
-            start_time = pygame.time.get_ticks()
-            stamina = max_stamina  # Reset stamina on restart
-            last_score = 0  # Reset the last score
-
-    if not game_over:
-        keys = pygame.key.get_pressed()
         
+        if in_menu:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:  # Start game
+                    in_menu = False
+                    start_time = pygame.time.get_ticks()
+                elif event.key == pygame.K_t:  # Show tutorial
+                    show_tutorial = True
+                elif event.key == pygame.K_b:  # Buy (Placeholder)
+                    show_buy_screen = True
+                elif event.key == pygame.K_ESCAPE:  # Quit game
+                    running = False
+        elif show_tutorial:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                show_tutorial = False
+                in_menu = True
+        elif game_over:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:  # Restart the game
+                player_x, player_y = WIDTH // 2, HEIGHT // 2
+                zombies.clear()
+                bullets.clear()
+                game_over = False
+                start_time = pygame.time.get_ticks()
+                stamina = max_stamina  # Reset stamina on restart
+                last_score = 0  # Reset the last score
+
+    if not in_menu and not show_tutorial and not game_over:
+        keys = pygame.key.get_pressed()
+
         # Sprinting logic
         is_sprinting = keys[pygame.K_LSHIFT] and stamina > 0
         current_speed = sprint_speed if is_sprinting else player_speed
@@ -193,7 +260,7 @@ while running:
         move_bullets()
         move_zombies()
         check_collisions()
-        
+
         now = pygame.time.get_ticks()
         if now - last_spawn_time > spawn_rate:
             spawn_zombie()
