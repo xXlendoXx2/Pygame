@@ -9,7 +9,7 @@ pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Zombie Shooter")
-
+ 
 # Colors
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
@@ -26,7 +26,7 @@ player_size = 30
 player_x, player_y = WIDTH // 2, HEIGHT // 2
 player_speed = 6
 sprint_speed = 9
-player_health = 3  # Player health
+player_health = 3
 
 # Bullets
 bullets = []
@@ -47,22 +47,13 @@ zombies_spawned = 0
 zombies_per_wave = 5
 wave_ongoing = True
 
-# Game states
-show_tutorial = True  # New tutorial screen flag
-game_over = False
-
 def spawn_zombie():
     global zombies_spawned
     if zombies_spawned < zombies_per_wave:
         side = random.choice(["left", "right", "top", "bottom"])
-        if side == "left":
-            x, y = 0, random.randint(0, HEIGHT)
-        elif side == "right":
-            x, y = WIDTH, random.randint(0, HEIGHT)
-        elif side == "top":
-            x, y = random.randint(0, WIDTH), 0
-        else:
-            x, y = random.randint(0, WIDTH), HEIGHT
+        x, y = (0, random.randint(0, HEIGHT)) if side == "left" else (
+            (WIDTH, random.randint(0, HEIGHT)) if side == "right" else (
+            (random.randint(0, WIDTH), 0) if side == "top" else (random.randint(0, WIDTH), HEIGHT)))
         
         zombies.append({"x": x, "y": y, "speed": base_zombie_speed})
         zombies_spawned += 1
@@ -81,6 +72,7 @@ def move_bullets():
         bullet[0] += bullet[2] * bullet_speed
         bullet[1] += bullet[3] * bullet_speed
     bullets = [b for b in bullets if 0 <= b[0] <= WIDTH and 0 <= b[1] <= HEIGHT]
+
 
 def check_collisions():
     global zombies, bullets, player_health, wave_ongoing, zombies_spawned
@@ -110,46 +102,19 @@ def draw():
     for zombie in zombies:
         pygame.draw.rect(screen, RED, (zombie["x"], zombie["y"], zombie_size, zombie_size))
     
-    wave_text = font.render(f"Wave: {wave}", True, BLACK)
-    screen.blit(wave_text, (10, 10))
-    health_text = font.render(f"Health: {player_health}", True, BLACK)
-    screen.blit(health_text, (10, 40))
-    
+    screen.blit(font.render(f"Wave: {wave}", True, BLACK), (10, 10))
+    screen.blit(font.render(f"Health: {player_health}", True, BLACK), (10, 40))
     pygame.display.flip()
 
 def game_over_screen():
     screen.fill(WHITE)
-    game_over_text = game_over_font.render("GAME OVER", True, RED)
-    screen.blit(game_over_text, (WIDTH // 2 - 150, HEIGHT // 3))
-    wave_text = font.render(f"You reached wave {wave}", True, BLACK)
-    screen.blit(wave_text, (WIDTH // 2 - 100, HEIGHT // 2))
-    restart_text = font.render("Press R to Restart or Q to Quit", True, BLACK)
-    screen.blit(restart_text, (WIDTH // 2 - 180, HEIGHT // 1.5))
-    pygame.display.flip()
-
-def tutorial_screen():
-    screen.fill(WHITE)
-    title_text = game_over_font.render("Zombie Shooter", True, BLACK)
-    screen.blit(title_text, (WIDTH // 2 - 180, HEIGHT // 6))
-
-    instructions = [
-        "WASD - Move",
-        "SHIFT - Sprint",
-        "Auto-shoots at nearest zombie",
-        "Survive as long as possible!",
-        "Press SPACE to start"
-    ]
-    
-    y_offset = HEIGHT // 3
-    for instruction in instructions:
-        text = font.render(instruction, True, BLACK)
-        screen.blit(text, (WIDTH // 2 - 150, y_offset))
-        y_offset += 40
-
+    screen.blit(game_over_font.render("GAME OVER", True, RED), (WIDTH // 2 - 150, HEIGHT // 3))
+    screen.blit(font.render(f"You reached wave {wave}", True, BLACK), (WIDTH // 2 - 100, HEIGHT // 2))
+    screen.blit(font.render("Press R to Restart or Q to Quit", True, BLACK), (WIDTH // 2 - 180, HEIGHT // 1.5))
     pygame.display.flip()
 
 def reset_game():
-    global player_x, player_y, player_health, bullets, zombies, wave, zombies_spawned, zombies_per_wave, wave_ongoing, spawn_rate, last_shot_time, show_tutorial, game_over
+    global player_x, player_y, player_health, bullets, zombies, wave, zombies_spawned, zombies_per_wave, wave_ongoing, spawn_rate, last_shot_time
     player_x, player_y = WIDTH // 2, HEIGHT // 2
     player_health = 3
     bullets = []
@@ -159,52 +124,38 @@ def reset_game():
     zombies_per_wave = 5
     wave_ongoing = True
     spawn_rate = 400
-    last_shot_time = 0  # Reset shooting cooldown
-    show_tutorial = True  # Show tutorial again
-    game_over = False
+    last_shot_time = 0
 
 running = True
 clock = pygame.time.Clock()
+game_over = False
 
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if show_tutorial:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                show_tutorial = False  # Hide tutorial and start game
-        elif game_over:
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    reset_game()
-                elif event.key == pygame.K_q:
-                    running = False
+        if game_over and event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r:
+                reset_game()
+                game_over = False
+            elif event.key == pygame.K_q:
+                running = False
     
-    if show_tutorial:
-        tutorial_screen()
-    elif not game_over:
+    if not game_over:
         if wave_ongoing:
             keys = pygame.key.get_pressed()
             current_speed = sprint_speed if keys[pygame.K_LSHIFT] else player_speed
+            player_x = max(0, min(WIDTH - player_size, player_x + (keys[pygame.K_d] - keys[pygame.K_a]) * current_speed))
+            player_y = max(0, min(HEIGHT - player_size, player_y + (keys[pygame.K_s] - keys[pygame.K_w]) * current_speed))
             
-            if keys[pygame.K_w] and player_y > 0:
-                player_y -= current_speed
-            if keys[pygame.K_s] and player_y < HEIGHT - player_size:
-                player_y += current_speed
-            if keys[pygame.K_a] and player_x > 0:
-                player_x -= current_speed
-            if keys[pygame.K_d] and player_x < WIDTH - player_size:
-                player_x += current_speed
-
-            now = pygame.time.get_ticks()
-            if now - last_shot_time > bullet_cooldown and zombies:
+            if pygame.time.get_ticks() - last_shot_time > bullet_cooldown and zombies:
                 nearest_zombie = min(zombies, key=lambda z: math.hypot(z["x"] - player_x, z["y"] - player_y))
                 dx, dy = nearest_zombie["x"] - player_x, nearest_zombie["y"] - player_y
                 dist = math.hypot(dx, dy)
-                if dist != 0:
+                if dist:
                     bullets.append([player_x, player_y, dx / dist, dy / dist])
-                    last_shot_time = now
-
+                    last_shot_time = pygame.time.get_ticks()
+            
             move_bullets()
             move_zombies()
             game_over = not check_collisions()
@@ -212,12 +163,10 @@ while running:
                 spawn_zombie()
         else:
             wave += 1
-            zombies_per_wave += 5
-            wave_ongoing = True
+            zombies_spawned, zombies_per_wave, wave_ongoing = 0, zombies_per_wave + 5, True
         draw()
     else:
         game_over_screen()
     
     clock.tick(60)
-
 pygame.quit()
